@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { User as SupabaseUser } from '@supabase/supabase-js';
 import { Group, Website } from '@/types';
 import LoginModal from './LoginModal';
 import GroupModal from './GroupModal';
@@ -16,6 +18,7 @@ export default function Dashboard() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [websites, setWebsites] = useState<Website[]>([]);
   const [activeGroupId, setActiveGroupId] = useState<number | null>(null);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
@@ -30,14 +33,29 @@ export default function Dashboard() {
   const [editingWebsite, setEditingWebsite] = useState<Website | null>(null);
 
   useEffect(() => {
-    checkLoginStatus();
-    fetchData();
-  }, []);
+    const supabase = createClient();
+    
+    // Check active session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setIsAdmin(!!session?.user);
+    });
 
-  const checkLoginStatus = () => {
-    const saved = localStorage.getItem('isAdmin');
-    if (saved === 'true') setIsAdmin(true);
-  };
+    // Listen for changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      setIsAdmin(!!session?.user);
+      if (session?.user) {
+        setShowLoginModal(false);
+      }
+    });
+    
+    fetchData();
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const fetchData = async () => {
     setLoading(true);
@@ -63,13 +81,15 @@ export default function Dashboard() {
   };
 
   const handleLogin = () => {
+    // Legacy admin login support
     setIsAdmin(true);
-    localStorage.setItem('isAdmin', 'true');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
     setIsAdmin(false);
-    localStorage.removeItem('isAdmin');
+    setUser(null);
   };
 
   // CRUD Handlers

@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "node .next/standalone/server.js",
     "lint": "next lint",
     "postinstall": "prisma generate",
     "db:init": "prisma db push && node prisma/seed.js",
@@ -17,6 +17,8 @@
   },
   "dependencies": {
     "@prisma/client": "^5.7.0",
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.86.2",
     "axios": "^1.6.0",
     "cheerio": "^1.0.0-rc.12",
     "clsx": "^2.0.0",
