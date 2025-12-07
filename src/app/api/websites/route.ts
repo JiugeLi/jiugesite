@@ -1,6 +1,10 @@
 import { db } from '@/lib/db';
 import { NextResponse } from 'next/server';
 
+// 启用 Node.js Runtime 并强制动态渲染
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const websites = await db.website.findMany({

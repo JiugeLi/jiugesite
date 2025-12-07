@@ -60,9 +60,14 @@ export default function Dashboard() {
   const fetchData = async () => {
     setLoading(true);
     try {
+      // 添加缓存控制，减少不必要的请求
       const [groupsRes, websitesRes] = await Promise.all([
-        fetch('/api/groups'),
-        fetch('/api/websites')
+        fetch('/api/groups', {
+          next: { revalidate: 60 }, // 缓存 60 秒
+        }),
+        fetch('/api/websites', {
+          next: { revalidate: 60 }, // 缓存 60 秒
+        })
       ]);
       const groupsData = await groupsRes.json();
       const websitesData = await websitesRes.json();

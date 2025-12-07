@@ -1,6 +1,10 @@
 import { db } from '@/lib/db';
 import { NextResponse } from 'next/server';
 
+// 启用 Edge Runtime 以减少冷启动时间
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const groups = await db.group.findMany({
