@@ -11,7 +11,11 @@ export async function GET() {
     return NextResponse.json(groups);
   } catch (error) {
     console.error('[GROUPS_GET]', error);
-    return new NextResponse('Internal Error', { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json(
+      { error: 'Internal Error', details: errorMessage },
+      { status: 500 }
+    );
   }
 }
 
