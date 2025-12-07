@@ -1,9 +1,10 @@
 import { db } from '@/lib/db';
 import { NextResponse } from 'next/server';
 
-// 启用 Edge Runtime 以减少冷启动时间
+// 启用 Node.js Runtime 并配置缓存
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const revalidate = 60; // 缓存 60 秒
 
 export async function GET() {
   try {
@@ -11,8 +12,22 @@ export async function GET() {
       orderBy: {
         sort_order: 'asc',
       },
+      // 只选择需要的字段，减少数据传输
+      select: {
+        id: true,
+        name: true,
+        icon: true,
+        sort_order: true,
+        created_at: true,
+      },
     });
-    return NextResponse.json(groups);
+    
+    // 添加缓存头
+    return NextResponse.json(groups, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+      },
+    });
   } catch (error) {
     console.error('[GROUPS_GET]', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

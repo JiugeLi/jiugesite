@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && node scripts/copy-static.mjs",
     "start": "node .next/standalone/server.js",
+    "start:dev": "next start",
     "lint": "next lint",
     "postinstall": "prisma generate",
     "db:init": "prisma db push && node prisma/seed.js",

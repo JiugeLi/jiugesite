@@ -32,6 +32,12 @@ export default function Dashboard() {
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
   const [editingWebsite, setEditingWebsite] = useState<Website | null>(null);
 
+  // 初始化数据 - 客户端直接请求
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // 处理认证
   useEffect(() => {
     const supabase = createClient();
     
@@ -51,36 +57,36 @@ export default function Dashboard() {
         setShowLoginModal(false);
       }
     });
-    
-    fetchData();
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      // 添加缓存控制，减少不必要的请求
-      const [groupsRes, websitesRes] = await Promise.all([
-        fetch('/api/groups', {
-          next: { revalidate: 60 }, // 缓存 60 秒
-        }),
-        fetch('/api/websites', {
-          next: { revalidate: 60 }, // 缓存 60 秒
-        })
-      ]);
-      const groupsData = await groupsRes.json();
-      const websitesData = await websitesRes.json();
-      
-      setGroups(groupsData);
-      setWebsites(websitesData);
+  const fetchData = async (force = false) => {
+    // 如果已经有数据且不是强制刷新，跳过
+    if (!force && groups.length > 0 && websites.length > 0) {
+      return;
+    }
 
-      if (groupsData.length > 0 && !activeGroupId) {
-        setActiveGroupId(groupsData[0].id);
+    try {
+      // 先请求 groups，立即显示侧边栏
+      const groupsRes = await fetch('/api/groups');
+      if (groupsRes.ok) {
+        const groupsData = await groupsRes.json();
+        setGroups(groupsData);
+        if (groupsData.length > 0 && !activeGroupId) {
+          setActiveGroupId(groupsData[0].id);
+        }
+        setLoading(false); // 有了分组就可以显示页面了
+      }
+
+      // 然后请求 websites，局部更新
+      const websitesRes = await fetch('/api/websites');
+      if (websitesRes.ok) {
+        const websitesData = await websitesRes.json();
+        setWebsites(websitesData);
       }
     } catch (error) {
       console.error('Failed to fetch data', error);
-    } finally {
       setLoading(false);
     }
   };
@@ -111,7 +117,7 @@ export default function Dashboard() {
           body: JSON.stringify(data),
         });
       }
-      fetchData();
+      fetchData(true); // 强制刷新
       setShowGroupModal(false);
       setEditingGroup(null);
     } catch (error) {
@@ -123,7 +129,7 @@ export default function Dashboard() {
     if (!confirm('确定删除此分组及其所有网站吗？')) return;
     try {
       await fetch(`/api/groups/${id}`, { method: 'DELETE' });
-      fetchData();
+      fetchData(true); // 强制刷新
       if (activeGroupId === id) setActiveGroupId(groups[0]?.id || null);
     } catch (error) {
       console.error('Error deleting group', error);
@@ -143,7 +149,7 @@ export default function Dashboard() {
           body: JSON.stringify(data),
         });
       }
-      fetchData();
+      fetchData(true); // 强制刷新
       setShowWebsiteModal(false);
       setEditingWebsite(null);
     } catch (error) {
@@ -155,7 +161,7 @@ export default function Dashboard() {
     if (!confirm('确定删除此网站吗？')) return;
     try {
       await fetch(`/api/websites/${id}`, { method: 'DELETE' });
-      fetchData();
+      fetchData(true); // 强制刷新
     } catch (error) {
       console.error('Error deleting website', error);
     }

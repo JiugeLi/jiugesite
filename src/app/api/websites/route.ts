@@ -1,9 +1,10 @@
 import { db } from '@/lib/db';
 import { NextResponse } from 'next/server';
 
-// 启用 Node.js Runtime 并强制动态渲染
+// 启用 Node.js Runtime 并配置缓存
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const revalidate = 60; // 缓存 60 秒
 
 export async function GET() {
   try {
@@ -13,8 +14,28 @@ export async function GET() {
         { click_count: 'desc' },
         { sort_order: 'asc' },
       ],
+      // 只选择需要的字段
+      select: {
+        id: true,
+        group_id: true,
+        name: true,
+        url: true,
+        logo_url: true,
+        logo_type: true,
+        description: true,
+        sort_order: true,
+        click_count: true,
+        created_at: true,
+        // 不返回 username 和 password，提高安全性和速度
+      },
     });
-    return NextResponse.json(websites);
+    
+    // 添加缓存头
+    return NextResponse.json(websites, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+      },
+    });
   } catch (error) {
     console.error('[WEBSITES_GET]', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

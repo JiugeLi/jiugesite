@@ -20,6 +20,7 @@ model Group {
   created_at DateTime  @default(now())
   websites   Website[]
 
+  @@index([sort_order])
   @@map("groups")
 }
 
@@ -39,5 +40,9 @@ model Website {
   last_clicked_at DateTime?
   created_at      DateTime  @default(now())
 
+  @@index([group_id])
+  @@index([click_count])
+  @@index([sort_order])
+  @@index([group_id, click_count, sort_order])
   @@map("websites")
 }
